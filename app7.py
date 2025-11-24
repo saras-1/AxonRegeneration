@@ -224,8 +224,6 @@ with tab_support:
             st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
             play_animation(gif("schwann_like_cell_gif.png"))
 
-    st.markdown("---")
-
     # ⭐ ASTROCYTES GO HERE — still inside tab_support ⭐
     ac1, ac2 = st.columns(2)
 
