@@ -84,13 +84,12 @@ def render_canvas():
         base.alpha_composite(load_rgba(st.session_state.cell_overlay))
 
     if st.session_state.scaffold_overlay:
-        base.alpha_composite(load_rgba(st.session_state.scaffold_overlay))
+        base.alpha_composite(load_rgga(st.session_state.scaffold_overlay))
 
     if st.session_state.astrocyte_overlay:
         base.alpha_composite(load_rgba(st.session_state.astrocyte_overlay))
 
     return base
-
 
 # ================================================
 # ANIMATIONS
@@ -106,7 +105,6 @@ def play_if_queued(canvas):
         time.sleep(1.0)
         canvas.image(render_canvas(), width=900)
 
-
 # ================================================
 # LAYOUT
 # ================================================
@@ -121,16 +119,15 @@ with canvas_col:
     canvas = st.empty()
     play_if_queued(canvas)
 
-    # Initial or previous state
     if st.session_state.last_outcome is None:
         canvas.image(render_canvas(), width=900)
     else:
         outcome_img = "axon_success_gif.png" if st.session_state.last_outcome else "axon_failure_gif.png"
         canvas.image(gif(outcome_img), width=900)
 
-    # Run simulation
     if st.button("Run Simulation 🚀"):
         success = 0.05
+
         if st.session_state.intrinsic:
             success += random.uniform(0.25, 0.45)
         if st.session_state.support:
@@ -156,7 +153,6 @@ with canvas_col:
         st.session_state.clear()
         st.rerun()
 
-
 # ================================================
 # RIGHT — TOOLBOX WITH TABS
 # ================================================
@@ -169,11 +165,9 @@ with toolbox_col:
         queue_animation(path)
         st.rerun()
 
-    # ----------------------------------------------------
-    # TABS
-    # ----------------------------------------------------
-    tab_intrinsic, tab_support, tab_astro, tab_scaffold, tab_molecules = st.tabs(
-        ["Intrinsic Growth Programs", "Support Cells", "Astrocytes", "Physical Scaffolds", "Small Molecules"]
+    # All tabs
+    tab_intrinsic, tab_support, tab_scaffold, tab_molecules = st.tabs(
+        ["Intrinsic Growth Programs", "Support Cells", "Physical Scaffolds", "Small Molecules"]
     )
 
     # ----------------------------------------------------
@@ -208,10 +202,11 @@ with toolbox_col:
                 play_animation(gif("AAV_gif.png"))
 
     # ----------------------------------------------------
-    # SUPPORT CELLS TAB
+    # SUPPORT CELLS TAB  (Astrocytes moved here)
     # ----------------------------------------------------
     with tab_support:
         support_locked = st.session_state.support is not None
+
         sc1, sc2 = st.columns(2)
 
         with sc1:
@@ -228,11 +223,12 @@ with toolbox_col:
                 st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
                 play_animation(gif("schwann_like_cell_gif.png"))
 
-    # ----------------------------------------------------
-    # ASTROCYTES TAB
-    # ----------------------------------------------------
-    with tab_astro:
+        st.markdown("---")
+
+        # ⭐ ASTROCYTES HERE NOW ⭐
+        st.subheader("Astrocytes (Glial Scar)")
         st.image(icon("astrocyte.png"), width=ICON_SIZE)
+
         if st.button("Add Astrocytes"):
             st.session_state.astrocyte = True
             st.session_state.astrocyte_overlay = gif("astrocyte_overlay.png")
@@ -261,6 +257,7 @@ with toolbox_col:
                 play_animation(gif("scaffold_fadein_gif.png"))
 
         pf3, pf4 = st.columns(2)
+
         with pf3:
             st.image(icon("hydrogel_tube.png"), width=ICON_SIZE)
             if st.button("Use Hydrogel", disabled=scaffold_locked and st.session_state.scaffold!="Hydrogel"):
