@@ -204,32 +204,40 @@ with toolbox_col:
     # ----------------------------------------------------
     # SUPPORT CELLS TAB  (Astrocytes moved here)
     # ----------------------------------------------------
-    with tab_support:
-        support_locked = st.session_state.support is not None
+with tab_support:
 
-        sc1, sc2 = st.columns(2)
+    support_locked = st.session_state.support is not None
 
-        with sc1:
-            st.image(icon("SchwannCell.png"), width=ICON_SIZE)
-            if st.button("Use Schwann", disabled=support_locked and st.session_state.support!="Schwann"):
-                st.session_state.support = "Schwann"
-                st.session_state.cell_overlay = gif("schwann_cell_overlay.png")
-                play_animation(gif("schwann_cell_gif.png"))
+    sc1, sc2 = st.columns(2)
 
-        with sc2:
-            st.image(icon("SchwannLikeCell.png"), width=ICON_SIZE)
-            if st.button("Use Schwann-like", disabled=support_locked and st.session_state.support!="SchwannLike"):
-                st.session_state.support = "SchwannLike"
-                st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
-                play_animation(gif("schwann_like_cell_gif.png"))
+    with sc1:
+        st.image(icon("SchwannCell.png"), width=ICON_SIZE)
+        if st.button("Use Schwann", disabled=support_locked and st.session_state.support!="Schwann"):
+            st.session_state.support = "Schwann"
+            st.session_state.cell_overlay = gif("schwann_cell_overlay.png")
+            play_animation(gif("schwann_cell_gif.png"))
 
-        sc3 = st.columns(2)
-        with sc3:
-            st.image(icon("astrocyte.png"), width=ICON_SIZE)
-            if st.button("Use Astrocytes", disabled=support_locked and st.session_state.support!="Astrocytes"):
-                st.session_state.support = "Astrocytes"
-                st.session_state.cell_overlay = gif("astrocyte_overlay.png")
-                play_animation(gif("astrocyte_fadein_gif.png"))
+    with sc2:
+        st.image(icon("SchwannLikeCell.png"), width=ICON_SIZE)
+        if st.button("Use Schwann-like", disabled=support_locked and st.session_state.support!="SchwannLike"):
+            st.session_state.support = "SchwannLike"
+            st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
+            play_animation(gif("schwann_like_cell_gif.png"))
+
+    st.markdown("---")
+
+    # ⭐ ASTROCYTES GO HERE — still inside tab_support ⭐
+    ac1, ac2 = st.columns(2)
+
+    with ac1:
+        st.image(icon("astrocyte.png"), width=ICON_SIZE)
+
+    with ac2:
+        if st.button("Use Astrocytes", disabled=support_locked and st.session_state.support!="Astrocytes"):
+            st.session_state.support = "Astrocytes"
+            st.session_state.cell_overlay = gif("astrocyte_overlay.png")
+            play_animation(gif("astrocyte_fadein_gif.png"))
+
 
 
     # ----------------------------------------------------
