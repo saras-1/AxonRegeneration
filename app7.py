@@ -11,19 +11,15 @@ st.set_page_config(page_title="Axon Regeneration Simulator", layout="wide")
 
 st.markdown("""
 <style>
-
-/* Global font size slightly smaller for GitHub deployment */
 html, body, [class*="css"] {
-    font-size: 22px !important;
+    font-size: 27px !important;
 }
 h1, h2, h3 {
     font-weight: 800 !important;
 }
-
-/* TOOLBOX PANEL */
 .toolbox-panel {
     background-color: rgba(25, 25, 35, 0.92);
-    padding: 1.8rem;
+    padding: 2.2rem;
     border-radius: 1.4rem;
     border: 1px solid rgba(255,255,255,0.18);
 }
@@ -31,32 +27,21 @@ h1, h2, h3 {
 /* BUTTONS */
 div.stButton > button {
     width: 100% !important;
-    height: 60px !important;
-    font-size: 23px !important;
+    height: 66px !important;
+    font-size: 27px !important;
     font-weight: 750 !important;
     border-radius: 14px !important;
 }
 
-/* FIX FOR GITHUB ZOOMING */
+/* FIXED CANVAS SIZE — prevents GitHub zoom */
 img[data-testid="stImage"] {
-    object-fit: contain !important;
-    max-width: 800px !important;     /* <— SIMULATION FIXED SIZE */
+    width: 900px !important;
+    max-width: 900px !important;
     height: auto !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    display: block !important;
-}
-
-/* Toolbox icons allowed to be larger */
-.toolbox-icon img {
-    max-width: 260px !important;
-    width: 100% !important;
     object-fit: contain !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
-
 
 
 # ================================================
@@ -74,15 +59,15 @@ BASE_IMAGE = icon("injured_axon_gap.png")
 defaults = {
     "intrinsic": set(),
     "support": None,
-    "astrocyte": None,
     "scaffold": None,
     "molecules": set(),
     "cell_overlay": None,
-    "astrocyte_overlay": None,
     "scaffold_overlay": None,
+    "astrocyte": False,
+    "astrocyte_overlay": None,
+    "queued_animation": None,
     "last_outcome": None,
-    "last_success": None,
-    "queued_animation": None
+    "last_success": None
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -101,11 +86,11 @@ def render_canvas():
     if st.session_state.cell_overlay:
         base.alpha_composite(load_rgba(st.session_state.cell_overlay))
 
-    if st.session_state.astrocyte_overlay:
-        base.alpha_composite(load_rgba(st.session_state.astrocyte_overlay))
-
     if st.session_state.scaffold_overlay:
         base.alpha_composite(load_rgba(st.session_state.scaffold_overlay))
+
+    if st.session_state.astrocyte_overlay:
+        base.alpha_composite(load_rgba(st.session_state.astrocyte_overlay))
 
     return base
 
@@ -120,15 +105,15 @@ def play_if_queued(canvas):
     if st.session_state.queued_animation:
         anim = st.session_state.queued_animation
         st.session_state.queued_animation = None
-        canvas.image(anim)
+        canvas.image(anim, width=900)
         time.sleep(1.0)
-        canvas.image(render_canvas())
+        canvas.image(render_canvas(), width=900)
 
 
 # ================================================
-# LAYOUT — GitHub-friendly spacing
+# LAYOUT — Smaller simulation, bigger toolbox
 # ================================================
-canvas_col, toolbox_col = st.columns([1.0, 1.0])
+canvas_col, toolbox_col = st.columns([1.1, 0.9])
 
 
 # ================================================
@@ -138,49 +123,50 @@ with canvas_col:
     st.header("🧪 Regeneration Simulation")
 
     canvas = st.empty()
+
     play_if_queued(canvas)
 
     if st.session_state.last_outcome is None:
-        canvas.image(render_canvas())
+        canvas.image(render_canvas(), width=900)
     else:
         if st.session_state.last_outcome:
-            canvas.image(gif("axon_success_gif.png"))
+            canvas.image(gif("axon_success_gif.png"), width=900)
         else:
-            canvas.image(gif("axon_failure_gif.png"))
+            canvas.image(gif("axon_failure_gif.png"), width=900)
 
     if st.button("Run Simulation 🚀"):
+        # ---- success probabilities ----
         success = 0.05
 
         if st.session_state.intrinsic:
             success += random.uniform(0.25, 0.45)
         if st.session_state.support:
             success += random.uniform(0.20, 0.40)
-        if st.session_state.astrocyte:
-            success += random.uniform(0.05, 0.15)
         if st.session_state.scaffold:
             success += random.uniform(0.10, 0.25)
         if st.session_state.molecules:
             success += random.uniform(0.05, 0.15)
+        if st.session_state.astrocyte:
+            success -= random.uniform(0.10, 0.20)  # astrocytes often inhibit regeneration
 
-        success = min(success, 0.95)
+        success = max(min(success, 0.95), 0.01)
+
         st.session_state.last_success = success
-
-        outcome = random.random() < success
-        st.session_state.last_outcome = outcome
-
         st.markdown(f"### Success Probability: **{success*100:.1f}%**")
 
-        if outcome:
+        result = random.random() < success
+        st.session_state.last_outcome = result
+
+        if result:
             st.success("Regeneration Successful 🎉")
-            canvas.image(gif("axon_success_gif.png"))
+            canvas.image(gif("axon_success_gif.png"), width=900)
         else:
             st.error("Regeneration Failed ❌")
-            canvas.image(gif("axon_failure_gif.png"))
+            canvas.image(gif("axon_failure_gif.png"), width=900)
 
     if st.button("Reset ❌"):
         st.session_state.clear()
         st.rerun()
-
 
 
 # ================================================
@@ -190,61 +176,60 @@ with toolbox_col:
     st.markdown('<div class="toolbox-panel">', unsafe_allow_html=True)
     st.header("🧰 Toolbox")
 
-    ICON_SIZE = 230
+    ICON_SIZE = 250
 
     def play_animation(path):
         queue_animation(path)
         st.rerun()
 
-    # -------- INTRINSIC --------
+
+    # ----------------- INTRINSIC -----------------
     st.subheader("Intrinsic Growth Programs")
     ig1, ig2 = st.columns(2)
 
     with ig1:
-        st.markdown('<div class="toolbox-icon">', unsafe_allow_html=True)
-        st.image(icon("KLF7.png"))
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.image(icon("KLF7.png"), width=ICON_SIZE)
         if st.button("Use KLF7"):
             st.session_state.intrinsic.add("KLF7")
             play_animation(gif("AAV_gif.png"))
 
     with ig2:
-        st.markdown('<div class="toolbox-icon">', unsafe_allow_html=True)
-        st.image(icon("GAP-43_BASP1.png"))
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.image(icon("GAP-43_BASP1.png"), width=ICON_SIZE)
         if st.button("Use GAP-43/BASP1"):
             st.session_state.intrinsic.add("GAP43")
             play_animation(gif("AAV_gif.png"))
 
     ig3, ig4 = st.columns(2)
     with ig3:
-        st.image(icon("CAMP_Elevation.png"))
+        st.image(icon("CAMP_Elevation.png"), width=ICON_SIZE)
         if st.button("Use cAMP"):
             st.session_state.intrinsic.add("cAMP")
             play_animation(gif("AAV_gif.png"))
 
     with ig4:
-        st.image(icon("ATF3CREB.png"))
+        st.image(icon("ATF3CREB.png"), width=ICON_SIZE)
         if st.button("Use ATF3/CREB"):
             st.session_state.intrinsic.add("CREB")
             play_animation(gif("AAV_gif.png"))
 
     st.markdown("---")
 
-    # -------- SUPPORT CELLS --------
+
+    # ---------------- SUPPORT CELLS ----------------
     st.subheader("Support Cells")
     support_locked = st.session_state.support is not None
 
     sc1, sc2 = st.columns(2)
+
     with sc1:
-        st.image(icon("SchwannCell.png"))
+        st.image(icon("SchwannCell.png"), width=ICON_SIZE)
         if st.button("Use Schwann", disabled=support_locked and st.session_state.support!="Schwann"):
             st.session_state.support = "Schwann"
             st.session_state.cell_overlay = gif("schwann_cell_overlay.png")
             play_animation(gif("schwann_cell_gif.png"))
 
     with sc2:
-        st.image(icon("SchwannLikeCell.png"))
+        st.image(icon("SchwannLikeCell.png"), width=ICON_SIZE)
         if st.button("Use Schwann-like", disabled=support_locked and st.session_state.support!="SchwannLike"):
             st.session_state.support = "SchwannLike"
             st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
@@ -252,48 +237,51 @@ with toolbox_col:
 
     st.markdown("---")
 
-    # -------- ASTROCYTES --------
-    st.subheader("Astrocytes")
-    ac1 = st.container()
 
-    with ac1:
-        st.image(icon("astrocyte.png"))
-        if st.button("Add Astrocyte"):
-            st.session_state.astrocyte = True
-            st.session_state.astrocyte_overlay = gif("astrocyte_overlay.png")
-            play_animation(gif("astrocyte_fadein_gif.png"))
+    # ---------------- ASTROCYTES ----------------
+    st.subheader("Astrocytes (Glial Scar)")
+
+    st.image(icon("astrocyte.png"), width=ICON_SIZE)
+
+    if st.button("Add Astrocytes"):
+        st.session_state.astrocyte = True
+        st.session_state.astrocyte_overlay = gif("astrocyte_overlay.png")
+        play_animation(gif("astrocyte_fadein_gif.png"))
 
     st.markdown("---")
 
-    # -------- SCAFFOLDS --------
+
+    # ---------------- SCAFFOLDS ----------------
     st.subheader("Physical Scaffolds")
     scaffold_locked = st.session_state.scaffold is not None
 
     pf1, pf2 = st.columns(2)
+
     with pf1:
-        st.image(icon("aligned_fibers.png"))
+        st.image(icon("aligned_fibers.png"), width=ICON_SIZE)
         if st.button("Use Aligned Fibers", disabled=scaffold_locked and st.session_state.scaffold!="Aligned"):
             st.session_state.scaffold = "Aligned"
             st.session_state.scaffold_overlay = gif("aligned_fibers_overlay.png")
             play_animation(gif("scaffold_fadein_gif.png"))
 
     with pf2:
-        st.image(icon("laminin.png"))
+        st.image(icon("laminin.png"), width=ICON_SIZE)
         if st.button("Use Laminin", disabled=scaffold_locked and st.session_state.scaffold!="Laminin"):
             st.session_state.scaffold = "Laminin"
             st.session_state.scaffold_overlay = gif("laminin_overlay.png")
             play_animation(gif("scaffold_fadein_gif.png"))
 
     pf3, pf4 = st.columns(2)
+
     with pf3:
-        st.image(icon("hydrogel_tube.png"))
+        st.image(icon("hydrogel_tube.png"), width=ICON_SIZE)
         if st.button("Use Hydrogel", disabled=scaffold_locked and st.session_state.scaffold!="Hydrogel"):
             st.session_state.scaffold = "Hydrogel"
             st.session_state.scaffold_overlay = gif("hydrogel_overlay.png")
             play_animation(gif("scaffold_fadein_gif.png"))
 
     with pf4:
-        st.image(icon("BDNF_gradient.png"))
+        st.image(icon("BDNF_gradient.png"), width=ICON_SIZE)
         if st.button("Use BDNF Gradient", disabled=scaffold_locked and st.session_state.scaffold!="BDNF"):
             st.session_state.scaffold = "BDNF"
             st.session_state.scaffold_overlay = gif("BDNF_overlay.png")
@@ -301,31 +289,34 @@ with toolbox_col:
 
     st.markdown("---")
 
-    # -------- SMALL MOLECULES --------
+
+    # ---------------- SMALL MOLECULES ----------------
     st.subheader("Small Molecules")
+
     sm1, sm2 = st.columns(2)
 
     with sm1:
-        st.image(icon("M1.png"))
+        st.image(icon("M1.png"), width=ICON_SIZE)
         if st.button("Use M1"):
             st.session_state.molecules.add("M1")
             play_animation(gif("small_molecule_diffusion_gif.png"))
 
     with sm2:
-        st.image(icon("SB216763.png"))
+        st.image(icon("SB216763.png"), width=ICON_SIZE)
         if st.button("Use SB216763"):
             st.session_state.molecules.add("SB216763")
             play_animation(gif("small_molecule_diffusion_gif.png"))
 
     sm3, sm4 = st.columns(2)
+
     with sm3:
-        st.image(icon("7,8-DHF.png"))
+        st.image(icon("7,8-DHF.png"), width=ICON_SIZE)
         if st.button("Use 7,8-DHF"):
             st.session_state.molecules.add("7,8-DHF")
             play_animation(gif("small_molecule_diffusion_gif.png"))
 
     with sm4:
-        st.image(icon("Mexiletine.png"))
+        st.image(icon("Mexiletine.png"), width=ICON_SIZE)
         if st.button("Use Mexiletine"):
             st.session_state.molecules.add("Mexiletine")
             play_animation(gif("small_molecule_diffusion_gif.png"))
