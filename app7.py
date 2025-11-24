@@ -11,12 +11,17 @@ st.set_page_config(page_title="Axon Regeneration Simulator", layout="wide")
 
 st.markdown("""
 <style>
-html, body, [class*="css"] {
-    font-size: 27px !important;
+
+ /* Reduce global font inflation */
+html, body {
+    font-size: 18px !important;
 }
+
 h1, h2, h3 {
     font-weight: 800 !important;
 }
+
+/* TOOLBOX PANEL */
 .toolbox-panel {
     background-color: rgba(25, 25, 35, 0.92);
     padding: 2.2rem;
@@ -27,18 +32,22 @@ h1, h2, h3 {
 /* BUTTONS */
 div.stButton > button {
     width: 100% !important;
-    height: 66px !important;
-    font-size: 27px !important;
+    height: 60px !important;
+    font-size: 22px !important;
     font-weight: 750 !important;
     border-radius: 14px !important;
 }
 
-/* Slightly smaller simulation window */
-img[data-testid="stImage"] {
-    max-width: 1100px !important;
+/* Simulation image scaling ONLY */
+.simulation-container img {
+    max-width: 900px !important;
     width: 100% !important;
     height: auto !important;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -57,7 +66,7 @@ BASE_IMAGE = icon("injured_axon_gap.png")
 # ================================================
 defaults = {
     "intrinsic": set(),
-    "support": None,  # Schwann, SchwannLike, Astrocyte
+    "support": None,
     "scaffold": None,
     "molecules": set(),
     "cell_overlay": None,
@@ -79,10 +88,13 @@ def load_rgba(path):
 
 def render_canvas():
     base = load_rgba(BASE_IMAGE)
+
     if st.session_state.cell_overlay:
         base.alpha_composite(load_rgba(st.session_state.cell_overlay))
+
     if st.session_state.scaffold_overlay:
         base.alpha_composite(load_rgba(st.session_state.scaffold_overlay))
+
     return base
 
 
@@ -102,7 +114,7 @@ def play_if_queued(canvas):
 
 
 # ================================================
-# LAYOUT — smaller simulation, bigger toolbox
+# LAYOUT — balanced simulation/toolbox
 # ================================================
 canvas_col, toolbox_col = st.columns([1.1, 0.9])
 
@@ -113,6 +125,7 @@ canvas_col, toolbox_col = st.columns([1.1, 0.9])
 with canvas_col:
     st.header("🧪 Regeneration Simulation")
 
+    st.markdown('<div class="simulation-container">', unsafe_allow_html=True)
     canvas = st.empty()
     play_if_queued(canvas)
 
@@ -130,8 +143,7 @@ with canvas_col:
         if st.session_state.intrinsic:
             success += random.uniform(0.25, 0.45)
 
-        # Modified: support cell contribution (astrocytes same strength for now)
-        if st.session_state.support in ("Schwann", "SchwannLike", "Astrocyte"):
+        if st.session_state.support:
             success += random.uniform(0.20, 0.40)
 
         if st.session_state.scaffold:
@@ -142,8 +154,8 @@ with canvas_col:
 
         success = min(success, 0.95)
         st.session_state.last_success = success
-        st.markdown(f"### Success Probability: **{success*100:.1f}%**")
 
+        st.markdown(f"### Success Probability: **{success*100:.1f}%**")
         result = random.random() < success
         st.session_state.last_outcome = result
 
@@ -157,6 +169,8 @@ with canvas_col:
     if st.button("Reset ❌", use_container_width=True):
         st.session_state.clear()
         st.rerun()
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ================================================
@@ -172,12 +186,10 @@ with toolbox_col:
         queue_animation(path)
         st.rerun()
 
-
-    # ----------------- INTRINSIC PROGRAMS -----------------
+    # ----------------- INTRINSIC -----------------
     st.subheader("Intrinsic Growth Programs")
 
     ig1, ig2 = st.columns(2)
-
     with ig1:
         st.image(icon("KLF7.png"), width=ICON_SIZE)
         if st.button("Use KLF7"):
@@ -206,13 +218,11 @@ with toolbox_col:
     st.markdown("---")
 
 
-    # ---------------- SUPPORT CELLS (Schwann + Astrocyte) ----------------
+    # ---------------- SUPPORT CELLS ----------------
     st.subheader("Support Cells")
     support_locked = st.session_state.support is not None
 
     sc1, sc2 = st.columns(2)
-
-    # Schwann
     with sc1:
         st.image(icon("SchwannCell.png"), width=ICON_SIZE)
         if st.button("Use Schwann", disabled=support_locked and st.session_state.support!="Schwann"):
@@ -220,7 +230,6 @@ with toolbox_col:
             st.session_state.cell_overlay = gif("schwann_cell_overlay.png")
             play_animation(gif("schwann_cell_gif.png"))
 
-    # Schwann-like
     with sc2:
         st.image(icon("SchwannLikeCell.png"), width=ICON_SIZE)
         if st.button("Use Schwann-like", disabled=support_locked and st.session_state.support!="SchwannLike"):
@@ -228,12 +237,13 @@ with toolbox_col:
             st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
             play_animation(gif("schwann_like_cell_gif.png"))
 
-    # Astrocyte row
-    sc3, _ = st.columns(2)
-    with sc3:
+    # ---------------- ASTROCYTE (NEW) ----------------
+    st.subheader("Astrocytes")
+
+    astro_col = st.columns(1)[0]
+    with astro_col:
         st.image(icon("astrocyte.png"), width=ICON_SIZE)
-        if st.button("Use Astrocyte", disabled=support_locked and st.session_state.support!="Astrocyte"):
-            st.session_state.support = "Astrocyte"
+        if st.button("Add Astrocyte"):
             st.session_state.cell_overlay = gif("astrocyte_overlay.png")
             play_animation(gif("astrocyte_fadein_gif.png"))
 
@@ -245,7 +255,6 @@ with toolbox_col:
     scaffold_locked = st.session_state.scaffold is not None
 
     pf1, pf2 = st.columns(2)
-
     with pf1:
         st.image(icon("aligned_fibers.png"), width=ICON_SIZE)
         if st.button("Use Aligned Fibers", disabled=scaffold_locked and st.session_state.scaffold!="Aligned"):
@@ -261,7 +270,6 @@ with toolbox_col:
             play_animation(gif("scaffold_fadein_gif.png"))
 
     pf3, pf4 = st.columns(2)
-
     with pf3:
         st.image(icon("hydrogel_tube.png"), width=ICON_SIZE)
         if st.button("Use Hydrogel", disabled=scaffold_locked and st.session_state.scaffold!="Hydrogel"):
@@ -296,7 +304,6 @@ with toolbox_col:
             play_animation(gif("small_molecule_diffusion_gif.png"))
 
     sm3, sm4 = st.columns(2)
-
     with sm3:
         st.image(icon("7,8-DHF.png"), width=ICON_SIZE)
         if st.button("Use 7,8-DHF"):
