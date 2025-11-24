@@ -223,16 +223,14 @@ with toolbox_col:
                 st.session_state.cell_overlay = gif("schwann_like_cells_overlay.png")
                 play_animation(gif("schwann_like_cell_gif.png"))
 
-        st.markdown("---")
+        sc3 = st.columns(2)
+        with sc3:
+            st.image(icon("astrocyte.png"), width=ICON_SIZE)
+            if st.button("Use Astrocytes", disabled=support_locked and st.session_state.support!="Astrocytes"):
+                st.session_state.support = "Astrocytes"
+                st.session_state.cell_overlay = gif("astrocyte_overlay.png")
+                play_animation(gif("astrocyte_fadein_gif.png"))
 
-        # ⭐ ASTROCYTES HERE NOW ⭐
-        st.subheader("Astrocytes (Glial Scar)")
-        st.image(icon("astrocyte.png"), width=ICON_SIZE)
-
-        if st.button("Add Astrocytes"):
-            st.session_state.astrocyte = True
-            st.session_state.astrocyte_overlay = gif("astrocyte_overlay.png")
-            play_animation(gif("astrocyte_fadein_gif.png"))
 
     # ----------------------------------------------------
     # SCAFFOLDS TAB
