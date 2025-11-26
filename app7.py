@@ -84,7 +84,7 @@ def render_canvas():
         base.alpha_composite(load_rgba(st.session_state.cell_overlay))
 
     if st.session_state.scaffold_overlay:
-        base.alpha_composite(load_rgga(st.session_state.scaffold_overlay))
+        base.alpha_composite(load_rgba(st.session_state.scaffold_overlay))
 
     if st.session_state.astrocyte_overlay:
         base.alpha_composite(load_rgba(st.session_state.astrocyte_overlay))
